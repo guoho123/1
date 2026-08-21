@@ -39,7 +39,7 @@
         .section { margin-bottom:18px; }
         .section-title { font-size:16px; color:#fff; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
         .section-title small { font-size:12px; color:#888; font-weight:normal; }
-        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; align-items:start; }
         .field { display:flex; flex-direction:column; gap:4px; }
         .field.full { grid-column:1/-1; }
         .field label { font-size:12px; color:#bbb; }
@@ -48,10 +48,14 @@
             border-radius:7px; padding:8px 12px; color:#fff; font-size:14px; font-family:inherit;
             outline:none; transition:border-color 0.2s, background 0.2s;
         }
+        .field input, .field select { height:38px; box-sizing:border-box; }
         .field input:focus, .field textarea:focus, .field select:focus {
             border-color:rgba(82,184,255,0.6); background:rgba(0,0,0,0.5);
         }
-        .field textarea { resize:vertical; min-height:70px; line-height:1.5; }
+        .field textarea {
+            resize:vertical; min-height:90px; line-height:1.65; box-sizing:border-box;
+            height:auto; width:100%; white-space:pre-wrap; overflow-wrap:break-word;
+        }
         .field select option { background:#222; }
         .avatar-preview { display:flex; align-items:center; gap:12px; margin-top:4px; }
         .avatar-preview img {
@@ -259,8 +263,8 @@ function renderProfile(){
             '<input type="text" data-path="profile.name" value="'+escapeHtml(p.name||'')+'" placeholder="昵称">'+
         '</div>'+
         '<div class="field">'+
-            '<label>desc 简介</label>'+
-            '<input type="text" data-path="profile.desc" value="'+escapeHtml(p.desc||'')+'" placeholder="一句话简介">'+
+            '<label>desc 简介（可多行）</label>'+
+            '<textarea data-path="profile.desc" rows="3" placeholder="支持多行简介，换行会被保留">'+escapeHtml(p.desc||'')+'</textarea>'+
         '</div>';
     bindPathInputs(grid);
 }

@@ -653,7 +653,14 @@ function renderCard(item,idx){
                     '<button type="button" data-md="code" title="代码块">代码</button>'+
                     '<button type="button" data-md="table" title="表格">表格</button>'+
                     '<button type="button" data-md="hr" title="分割线">分割线</button>'+
+                    '<span class="md-sep"></span>'+
+                    '<button type="button" data-md="upload-image" title="上传图片">传图</button>'+
+                    '<button type="button" data-md="upload-video" title="上传视频">传视频</button>'+
+                    '<button type="button" data-md="upload-file" title="上传文件">传文件</button>'+
                 '</div>'+
+                '<input type="file" data-md-input="image" accept="image/*" style="display:none">'+
+                '<input type="file" data-md-input="video" accept="video/*" style="display:none">'+
+                '<input type="file" data-md-input="file" accept="*/*" style="display:none">'+
                 '<div class="md-split">'+
                     '<textarea data-field="content" placeholder="# 标题&#10;&#10;正文（支持标准 markdown：加粗、列表、引用、代码块、表格…）">'+escapeHtml(item.content||'')+'</textarea>'+
                     '<div class="md-preview" data-md-preview></div>'+
@@ -716,9 +723,32 @@ function bindCardEvents(){
         card.querySelectorAll('[data-md]').forEach(function(btn){
             btn.addEventListener('click',function(e){
                 e.preventDefault();
-                handleMdAction(card, idx, btn.getAttribute('data-md'));
+                var action=btn.getAttribute('data-md');
+                if(action==='upload-image' || action==='upload-video' || action==='upload-file'){
+                    var kind=action.replace('upload-','');
+                    var inp=card.querySelector('[data-md-input="'+kind+'"]');
+                    if(inp) inp.click();
+                    return;
+                }
+                handleMdAction(card, idx, action);
             });
         });
+        // 上传图片 / 视频 / 文件：input change → 处理上传 + 插入 md
+        var upImg=card.querySelector('[data-md-input="image"]');
+        var upVideo=card.querySelector('[data-md-input="video"]');
+        var upFile=card.querySelector('[data-md-input="file"]');
+        function bindUpInput(input, kind){
+            if(!input) return;
+            input.addEventListener('change',function(e){
+                var f=e.target.files[0];
+                if(!f) return;
+                e.target.value='';
+                handleMediaUpload(card, idx, f, kind);
+            });
+        }
+        bindUpInput(upImg,'image');
+        bindUpInput(upVideo,'video');
+        bindUpInput(upFile,'file');
         // cover 选图：本地图片 → 转 webp 压缩 → 自动填 img/路径 + 存 Blob 用于打包 ZIP
         var coverFile=card.querySelector('[data-cover-file]');
         var coverPick=card.querySelector('[data-cover-pick]');
@@ -804,6 +834,83 @@ function convertToWebp(file, cb){
 }
 
 function fmtKB(n){ return (n/1024).toFixed(1)+'KB'; }
+
+// 清理文件名中的非法字符，加时间戳避免重名
+function safeMediaName(fileName, kind){
+    var base=String(fileName||'media').replace(/\\/g,'/').split('/').pop();
+    var dot=base.lastIndexOf('.');
+    var name=(dot>0?base.substring(0,dot):base).replace(/[^0-9A-Za-z\u4e00-\u9fa5_\-]/g,'_') || 'media';
+    var ext=(dot>0?base.substring(dot+1):'').toLowerCase() || '';
+    // 限制长度
+    if(name.length>40) name=name.substring(0,40);
+    return name+'_'+Date.now().toString(36)+(ext?'.'+ext:'');
+}
+
+// 把文件（Blob + 相对路径）存入条目 _mediaFiles 数组，用于 ZIP 打包
+function pushMedia(idx, relPath, blob){
+    if(!DATA[idx]._mediaFiles || !Array.isArray(DATA[idx]._mediaFiles)){
+        DATA[idx]._mediaFiles=[];
+    }
+    // 同路径覆盖
+    for(var i=0;i<DATA[idx]._mediaFiles.length;i++){
+        if(DATA[idx]._mediaFiles[i].path===relPath){
+            DATA[idx]._mediaFiles[i].blob=blob;
+            return;
+        }
+    }
+    DATA[idx]._mediaFiles.push({ path:relPath, blob:blob });
+}
+
+// 在光标处直接插入一段字符串（用于插入 ![](img) / <video> / [链接](file) 等）
+function insertMdInline(card, idx, text){
+    var ta=card.querySelector('textarea[data-field="content"]');
+    if(!ta) return;
+    var start=ta.selectionStart, end=ta.selectionEnd;
+    ta.value=ta.value.substring(0,start)+text+ta.value.substring(end);
+    DATA[idx].content=ta.value;
+    ta.focus();
+    var pos=start+text.length;
+    ta.setSelectionRange(pos, pos);
+    syncMdUi(card, idx);
+}
+
+// 处理上传图片 / 视频 / 文件：转码/存 blob/填路径/插入 md
+function handleMediaUpload(card, idx, file, kind){
+    if(!file){ return; }
+    var MAX_IMG=10*1024*1024; // 10MB
+    var MAX_VIDEO=100*1024*1024; // 100MB
+    var MAX_FILE=50*1024*1024; // 50MB
+    var sizeLimit= kind==='image'?MAX_IMG : (kind==='video'?MAX_VIDEO:MAX_FILE);
+    var sizeName= kind==='image'?'10MB' : (kind==='video'?'100MB':'50MB');
+    if(file.size>sizeLimit){
+        toast((kind==='image'?'图片':(kind==='video'?'视频':'文件'))+'大小不能超过 '+sizeName,'error'); return;
+    }
+    if(kind==='image'){
+        toast('正在转 webp 压缩…');
+        convertToWebp(file, function(res){
+            if(!res){ toast('图片读取失败，请换一张','error'); return; }
+            var fn='img/'+safeMediaName(file.name.replace(/\.[^.]+$/,'.'+res.ext),'image');
+            pushMedia(idx, fn, res.blob);
+            var altText=file.name.replace(/\.[^.]+$/,'') || '图片';
+            insertMdInline(card, idx, '!['+altText+']('+fn+')');
+            var note=res.ok
+                ? ('（'+fmtKB(res.oldSize)+' → '+fmtKB(res.newSize)+'）')
+                : '（浏览器不支持 webp，保留原格式）';
+            toast('已插入图片：'+fn+note,'ok');
+        });
+    }else if(kind==='video'){
+        var fn='media/'+safeMediaName(file.name,'video');
+        pushMedia(idx, fn, file);
+        insertMdInline(card, idx, '<video src="'+fn+'" controls style="max-width:100%;border-radius:6px;"></video>');
+        toast('已插入视频：'+fn+'（'+fmtKB(file.size)+'）','ok');
+    }else{
+        var fn='files/'+safeMediaName(file.name,'file');
+        pushMedia(idx, fn, file);
+        var linkText=file.name || '附件';
+        insertMdInline(card, idx, '['+linkText+']('+fn+')');
+        toast('已插入文件：'+fn+'（'+fmtKB(file.size)+'）','ok');
+    }
+}
 
 // 同步单卡 md 编辑后的 UI（数据 / 预览 / 字数）
 function syncMdUi(card, idx){
@@ -984,7 +1091,7 @@ $('btnZip').addEventListener('click',function(){
     // a2/ 文件夹放 manifest + md，解压后直接替换项目 a2/
     var folder=zip.folder('a2');
     folder.file('manifest.json', JSON.stringify(manifestOnly(),null,2));
-    var mdCount=0, imgCount=0;
+    var mdCount=0, imgCount=0, mediaCount=0;
     DATA.forEach(function(it){
         var fn=String(it.file||'').trim();
         if(!fn) return;
@@ -999,6 +1106,15 @@ $('btnZip').addEventListener('click',function(){
                 imgCount++;
             }
         }
+        // 正文上传的媒体文件（图片/视频/附件）→ 按各自路径打包
+        if(it._mediaFiles && Array.isArray(it._mediaFiles) && it._mediaFiles.length){
+            it._mediaFiles.forEach(function(m){
+                if(m && m.path && m.blob){
+                    zip.file(m.path, m.blob);
+                    mediaCount++;
+                }
+            });
+        }
     });
     toast('正在打包…');
     zip.generateAsync({type:'blob'}).then(function(blob){
@@ -1010,7 +1126,11 @@ $('btnZip').addEventListener('click',function(){
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        var summary='已下载 a2.zip（manifest.json + '+mdCount+' 篇 md'+(imgCount?(' + '+imgCount+' 张封面图'):'')+'）';
+        var parts=[];
+        parts.push('manifest.json + '+mdCount+' 篇 md');
+        if(imgCount) parts.push(imgCount+' 张封面图');
+        if(mediaCount) parts.push(mediaCount+' 个正文媒体（图/视频/文件）');
+        var summary='已下载 a2.zip（'+parts.join(' + ')+'）';
         toast(summary,'ok');
     }).catch(function(err){
         toast('打包失败：'+err.message,'error');

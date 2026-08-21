@@ -84,6 +84,9 @@
             line-height:1.7;
             font-size:15px;
             color:#dddddd;
+            white-space:pre-line;
+            overflow-wrap:break-word;
+            margin:0;
         }
         .desc-card a {
             color:#82b8ff;

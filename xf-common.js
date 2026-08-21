@@ -58,7 +58,10 @@
                 socialHtml+='<a class="social-btn" href="'+(s.href||'#')+'">'+(s.text||'🔗')+'</a>';
             }
         });
-        area.innerHTML='<div class="profile-head"><img class="avatar" src="'+(p.avatar||'')+'" alt="头像"><div class="profile-name"><h2>'+(p.name||'')+'</h2></div></div><div class="glass desc-card"><p>'+(p.desc||'')+'</p></div><div class="social-row">'+socialHtml+'</div>';
+        var descHtml=String(p.desc||'')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\r\n|\r|\n/g,'<br>');
+        area.innerHTML='<div class="profile-head"><img class="avatar" src="'+(p.avatar||'')+'" alt="头像"><div class="profile-name"><h2>'+(p.name||'')+'</h2></div></div><div class="glass desc-card"><p>'+descHtml+'</p></div><div class="social-row">'+socialHtml+'</div>';
     }
     function renderStats(cfg){
         var grid=document.getElementById('statGrid');
@@ -176,6 +179,8 @@
     }
     window.__loadCfg=loadCfg;
 
+
+    
     // ===== 页面初始化总入口 =====
     function initPage(){
         xfClock();
@@ -185,6 +190,8 @@
         loadCfg();
     }
 
+
+    
     // DOMContentLoaded 已过（脚本在 body 末）则立即执行，否则等待
     if(document.readyState==='loading'){
         document.addEventListener('DOMContentLoaded',initPage);
