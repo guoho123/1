@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>manifest.json 编辑器</title>
+    <link rel="stylesheet" href="a1.css">
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* 编辑器专用样式 */
+        .editor-wrap {
+            max-width: 980px;
+            margin: 40px auto 0;
+            padding: 0 40px;
+        }
+        .editor-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .editor-sub {
+            font-size: 13px;
+            color: #bbb;
+            margin-bottom: 22px;
+            line-height: 1.7;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .btn {
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            padding: 9px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: background 0.2s, transform 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+        .btn-primary { background: rgba(82,184,255,0.22); border-color: rgba(82,184,255,0.45); }
+        .btn-primary:hover { background: rgba(82,184,255,0.35); }
+        .btn-danger { background: rgba(255,120,120,0.18); border-color: rgba(255,120,120,0.4); }
+        .btn-danger:hover { background: rgba(255,120,120,0.32); }
+        .btn-warn { background: rgba(252,235,146,0.16); border-color: rgba(252,235,146,0.4); color:#fceb92; }
+        .btn-warn:hover { background: rgba(252,235,146,0.28); }
+        .file-info {
+            font-size: 13px;
+            color: #aaa;
+            margin-left: auto;
+        }
+        /* 卡片列表 */
+        .entry-list { display: flex; flex-direction: column; gap: 14px; }
+        .entry-card {
+            padding: 18px 20px;
+        }
+        .entry-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .entry-idx {
+            font-size: 13px;
+            color: #82b8ff;
+            font-weight: 600;
+        }
+        .entry-actions { display: flex; gap: 8px; }
+        .icon-btn {
+            width: 30px; height: 30px;
+            border-radius: 7px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); }
+        .icon-btn.del:hover { background: rgba(255,120,120,0.35); }
+        .icon-btn.up:hover, .icon-btn.down:hover { background: rgba(82,184,255,0.3); }
+        /* 表单网格 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 14px;
+        }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field.full { grid-column: 1 / -1; }
+        .field label {
+            font-size: 12px;
+            color: #bbb;
+        }
+        .field input, .field textarea {
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 7px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .field input:focus, .field textarea:focus {
+            border-color: rgba(82,184,255,0.6);
+            background: rgba(0,0,0,0.5);
+        }
+        .field textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
+        /* md 正文区：左编辑 / 右实时预览 */
+        .field-content { grid-column: 1 / -1; }
+        .field-content textarea {
+            font-family: Consolas, "Courier New", monospace;
+            min-height: 200px;
+            font-size: 13px;
+            line-height: 1.55;
+            background: rgba(0,0,0,0.4);
+        }
+        .field-content .md-hint {
+            font-size: 11px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .field-content .md-hint .md-status { color:#6db3ff; }
+        /* markdown 工具栏 */
+        .md-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 7px;
+        }
+        .md-toolbar button {
+            min-width: 32px;
+            height: 28px;
+            padding: 0 9px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #ddd;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            line-height: 1;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .md-toolbar button:hover {
+            background: rgba(82,184,255,0.25);
+            color: #fff;
+            border-color: rgba(82,184,255,0.5);
+        }
+        .md-toolbar button:active { transform: translateY(1px); }
+        .md-toolbar .md-sep {
+            width: 1px;
+            height: 22px;
+            background: rgba(255,255,255,0.18);
+            margin: 3px 2px;
+            padding: 0;
+            min-width: 0;
+            border: none;
+            cursor: default;
+        }
+        .md-toolbar .md-sep:hover { background: rgba(255,255,255,0.18); }
+        .md-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            align-items: stretch;
+        }
+        .md-split textarea { min-height: 320px; }
+        .md-preview {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 7px;
+            padding: 12px 16px;
+            overflow: auto;
+            max-height: 480px;
+            min-height: 320px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #eee;
+        }
+        .md-preview:empty::before {
+            content: '预览区（左侧写 markdown，这里实时显示渲染效果）';
+            color: #666;
+            font-size: 12px;
+        }
+        .md-preview h1,.md-preview h2,.md-preview h3,.md-preview h4 { color:#fff; margin:0.6em 0 0.3em; line-height:1.3; }
+        .md-preview h1 { font-size:22px; }
+        .md-preview h2 { font-size:18px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px; }
+        .md-preview h3 { font-size:15px; }
+        .md-preview p { margin:0.5em 0; }
+        .md-preview a { color:#6db3ff; text-decoration:none; }
+        .md-preview a:hover { text-decoration:underline; }
+        .md-preview ul,.md-preview ol { margin:0.5em 0; padding-left:1.4em; }
+        .md-preview li { margin:0.2em 0; }
+        .md-preview blockquote { border-left:3px solid rgba(255,255,255,0.35); padding:4px 12px; margin:0.6em 0; color:#ccc; background:rgba(255,255,255,0.04); border-radius:0 6px 6px 0; }
+        .md-preview code { background:rgba(0,0,0,0.35); padding:2px 5px; border-radius:4px; font-size:13px; color:#fceb92; font-family:Consolas,monospace; }
+        .md-preview pre { background:rgba(0,0,0,0.45); padding:10px 12px; border-radius:8px; overflow-x:auto; border:1px solid rgba(255,255,255,0.1); margin:0.6em 0; }
+        .md-preview pre code { background:transparent; padding:0; color:#eee; font-size:13px; }
+        .md-preview img { max-width:100%; border-radius:6px; margin:0.5em 0; }
+        .md-preview table { width:100%; border-collapse:collapse; margin:0.6em 0; font-size:13px; }
+        .md-preview th,.md-preview td { border:1px solid rgba(255,255,255,0.15); padding:6px 10px; text-align:left; }
+        .md-preview th { background:rgba(255,255,255,0.08); color:#fff; }
+        .md-preview hr { border:none; border-top:1px solid rgba(255,255,255,0.15); margin:1em 0; }
+        @media (max-width: 820px) {
+            .md-split { grid-template-columns: 1fr; }
+            .md-split textarea { min-height: 200px; }
+            .md-preview { min-height: 200px; max-height: 360px; }
+        }
+        .cover-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .cover-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .cover-input-row input { flex: 1; min-width: 0; }
+        .btn-mini {
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: #ddd;
+            white-space: nowrap;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .btn-mini:hover { background: rgba(82,184,255,0.25); color:#fff; border-color: rgba(82,184,255,0.5); }
+        .cover-preview img {
+            width: 60px; height: 42px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(0,0,0,0.3);
+        }
+        .cover-preview .cover-ph {
+            width: 60px; height: 42px;
+            border-radius: 6px;
+            border: 1px dashed rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: #888;
+        }
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #aaa;
+            font-size: 15px;
+        }
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(40,40,40,0.95);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.18);
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.error { border-color: rgba(255,120,120,0.5); }
+        .toast.ok { border-color: rgba(120,255,150,0.5); }
+        /* JSON 预览区 */
+        .json-preview {
+            margin-top: 26px;
+            padding: 16px 18px;
+        }
+        .json-preview pre {
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 12.5px;
+            color: #d6e8ff;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 360px;
+            overflow: auto;
+        }
+        .json-preview .json-title {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        /* 拖拽上传区 */
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.25);
+            border-radius: 14px;
+            padding: 46px 24px;
+            text-align: center;
+            color: #bbb;
+            background: rgba(255,255,255,0.04);
+            transition: all 0.25s;
+            cursor: pointer;
+            margin-bottom: 18px;
+        }
+        .drop-zone:hover { border-color: rgba(82,184,255,0.55); color:#fff; background: rgba(82,184,255,0.08); }
+        .drop-zone.dragover {
+            border-color: rgba(82,184,255,0.85);
+            background: rgba(82,184,255,0.14);
+            color:#fff;
+            transform: scale(1.01);
+        }
+        .drop-zone .dz-icon { font-size: 38px; line-height:1; margin-bottom: 10px; }
+        .drop-zone .dz-title { font-size: 16px; color:#fff; margin-bottom: 6px; }
+        .drop-zone .dz-sub { font-size: 13px; }
+        .drop-zone .dz-sub b { color:#82b8ff; }
+        @media (max-width: 820px) {
+            .editor-wrap { padding: 0 20px; margin-top: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .file-info { margin-left: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">manifest 编辑器</div>
+    <button class="nav-toggle" id="navToggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+    </button>
+    <nav id="navMenu">
+        <a href="index.html">首页</a>
+        <a href="index1.html">项目</a>
+        <a href="index2.html">文章</a>
+        <a href="JavaScript:;" class="xf-PicBlackbox" data-pic="img/aaa.jpg">赞助</a>
+    </nav>
+</header>
+
+
+<div class="editor-wrap">
+    <h1 class="editor-title">manifest.json 编辑器</h1>
+    <p class="editor-sub">
+        字段规范参考 <code style="color:#82b8ff">a2/welcome.md</code>（文章系统，可管理多篇文章）：<br>
+        <b>title</b> 文章标题 · <b>file</b> md 文件名 · <b>date</b> YYYY-MM-DD · <b>summary</b> 卡片摘要 · <b>cover</b> 封面图路径（可选）<br>
+        浏览器无法直接写入本地文件，请用「下载 JSON」下载后替换 <code style="color:#82b8ff">a2/manifest.json</code>。
+    </p>
+
+    <div class="toolbar">
+        <label class="btn btn-primary">
+            ↑ 上传文件
+            <input type="file" id="fileImport" accept=".json,.md,application/json,text/markdown" multiple style="display:none">
+        </label>
+        <button class="btn btn-primary" id="btnExport">↓ 下载 JSON</button>
+        <button class="btn btn-primary" id="btnZip">下载 ZIP</button>
+        <button class="btn" id="btnAdd">+ 新增条目</button>
+        <button class="btn btn-danger" id="btnClear">清空</button>
+        <button class="btn" id="btnReload">从服务器加载</button>
+        <span class="file-info" id="fileInfo">未加载</span>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+        <div class="dz-icon">⬆</div>
+        <div class="dz-title">拖拽 manifest.json + .md 文章到这里，或点击上传</div>
+        <div class="dz-sub">可多选：先选 <b>manifest.json</b> 再加 <b>.md</b> 文件 → 编辑 → 下载 ZIP 整体替换 <b>a2/</b></div>
+        <input type="file" id="dropInput" accept=".json,.md,application/json,text/markdown" multiple style="display:none">
+    </div>
+
+    <div class="entry-list" id="entryList"></div>
+
+    <div class="glass json-preview">
+        <div class="json-title">
+            <span>实时 JSON 预览</span>
+            <button class="btn" id="btnCopy" style="padding:5px 12px;font-size:12px">复制</button>
+        </div>
+        <pre id="jsonPreview">// 加载中…</pre>
+    </div>
+</div>
+
+
+<footer>
+    <div>Copyright © 2026 心悦. All Rights Reserved</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ========= 手机端汉堡菜单 =========
+var navToggle=document.getElementById('navToggle');
+var navMenu=document.getElementById('navMenu');
+if(navToggle && navMenu){
+    navToggle.addEventListener('click',function(){
+        navToggle.classList.toggle('active');
+        navMenu.classList.toggle('open');
+    });
+}
+
+// ========= 工具 =========
+function $(id){ return document.getElementById(id); }
+function toast(msg,type){
+    var t=$('toast');
+    t.textContent=msg;
+    t.className='toast show'+(type?' '+type:'');
+    clearTimeout(toast._t);
+    toast._t=setTimeout(function(){ t.className='toast'; },2200);
+}
+function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+function todayStr(){
+    var d=new Date();
+    var m=d.getMonth()+1, dd=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0'+m:m)+'-'+(dd<10?'0'+dd:dd);
+}
+
+// ========= 数据 =========
+var DATA=[];
+var SRC='a1/manifest.json';
+
+// 统一上传处理（按钮 / 拖拽共用，支持 manifest.json + 多个 .md）
+function handleFileUpload(fileList){
+    var files=Array.prototype.slice.call(fileList||[]);
+    if(files.length===0){ return; }
+    var jsonFiles=[], mdFiles=[];
+    files.forEach(function(f){
+        if(/\.json$/i.test(f.name) || f.type==='application/json') jsonFiles.push(f);
+        else if(/\.md$/i.test(f.name) || f.type==='text/markdown') mdFiles.push(f);
+    });
+    if(jsonFiles.length===0 && mdFiles.length===0){
+        toast('请选择 .json 或 .md 文件','error'); return;
+    }
+    var readers=files.map(function(f){
+        return new Promise(function(res){
+            var fr=new FileReader();
+            fr.onload=function(ev){ res({name:f.name, text:ev.target.result}); };
+            fr.onerror=function(){ res({name:f.name, text:''}); };
+            fr.readAsText(f,'utf-8');
+        });
+    });
+    Promise.all(readers).then(function(results){
+        // 找 manifest.json（取第一个有效的）
+        var manifest=null;
+        results.forEach(function(r){
+            if(/\.json$/i.test(r.name) && !manifest){
+                try{
+                    var arr=JSON.parse(r.text);
+                    if(Array.isArray(arr)){
+                        arr.forEach(function(it){ it.content=it.content||''; });
+                        manifest=arr;
+                    }else{ toast(r.name+' 不是数组','error'); }
+                }catch(e){ toast('解析失败：'+r.name,'error'); }
+            }
+        });
+        // 收集所有 md（文件名 -> 正文）
+        var mdMap={};
+        results.forEach(function(r){
+            if(/\.md$/i.test(r.name)) mdMap[r.name]=r.text;
+        });
+        if(manifest){
+            // 以 manifest 为基线，匹配 md 填充 content
+            manifest.forEach(function(it){
+                var fn=it.file||'';
+                if(mdMap[fn]){ it.content=mdMap[fn]; delete mdMap[fn]; }
+                else if(!it.content) it.content='';
+            });
+            // 剩余未匹配的 md → 追加为新条目
+            Object.keys(mdMap).forEach(function(fn){
+                manifest.push({
+                    title: fn.replace(/\.md$/i,''),
+                    file: fn, date: todayStr(),
+                    summary:'', cover:'', content: mdMap[fn]
+                });
+            });
+            DATA=manifest;
+        }else{
+            // 没有 manifest，仅上传 md：合并到现有 DATA（同名 file 更新 content）
+            if(!Array.isArray(DATA)) DATA=[];
+            Object.keys(mdMap).forEach(function(fn){
+                var existing=null;
+                for(var i=0;i<DATA.length;i++){ if(DATA[i].file===fn){ existing=DATA[i]; break; } }
+                if(existing){ existing.content=mdMap[fn]; }
+                else{
+                    DATA.push({
+                        title: fn.replace(/\.md$/i,''),
+                        file: fn, date: todayStr(),
+                        summary:'', cover:'', content: mdMap[fn]
+                    });
+                }
+            });
+        }
+        $('fileInfo').textContent='已加载 · '+DATA.length+' 条文章';
+        hideDropZone();
+        render();
+        toast('上传成功，开始编辑','ok');
+    });
+}
+
+function hideDropZone(){ $('dropZone').style.display='none'; }
+function showDropZone(){ $('dropZone').style.display=''; }
+
+// 自动获取：先拿 manifest.json，再并行抓取每篇文章的 .md 正文，保证编辑时内容都在
+function fetchContents(){
+    var tasks=DATA.map(function(it,idx){
+        var fn=(it.file||'').trim();
+        if(!fn) return Promise.resolve();
+        return fetch('a1/'+encodeURIComponent(fn)+'?t='+Date.now())
+            .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+            .then(function(txt){ DATA[idx].content=txt; })
+            .catch(function(err){
+                console.warn('读取正文失败 '+fn+':',err.message);
+                if(DATA[idx].content==null) DATA[idx].content='';
+                // 单篇失败不阻断整体
+            });
+    });
+    return Promise.all(tasks);
+}
+
+function loadRemote(){
+    $('fileInfo').textContent='正在从服务器加载 a1/manifest.json …';
+    fetch(SRC+'?t='+Date.now())
+        .then(function(r){
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            return r.json();
+        })
+        .then(function(arr){
+            if(!Array.isArray(arr)) throw new Error('manifest.json 必须是数组');
+            arr.forEach(function(it){ if(it.content==null) it.content=''; });
+            DATA=arr;
+            hideDropZone();
+            $('fileInfo').textContent='manifest 已加载，正在读取 '+DATA.length+' 篇正文…';
+            $('entryList').innerHTML='<div class="empty-state">manifest 已加载，正在并行读取 '+DATA.length+' 篇文章正文…</div>';
+            $('jsonPreview').textContent='// 正在读取正文…';
+            return fetchContents();
+        })
+        .then(function(){
+            $('fileInfo').textContent='已加载 a2/manifest.json · '+DATA.length+' 条（含正文）';
+            render();
+            toast('加载完成（manifest + 全部正文）','ok');
+        })
+        .catch(function(err){
+            $('fileInfo').textContent='服务器加载失败：'+err.message;
+            $('entryList').innerHTML='<div class="empty-state">服务器加载失败：'+escapeHtml(err.message)+'<br>请使用「上传文件」从本地载入 manifest.json + .md。</div>';
+            $('jsonPreview').textContent='// 服务器加载失败，请上传文件';
+            toast('服务器加载失败，请改用上传','error');
+        });
+}
+
+function render(){
+    var list=$('entryList');
+    if(DATA.length===0){
+        list.innerHTML='<div class="empty-state">暂无条目，点击「+ 新增条目」开始编辑。</div>';
+    }else{
+        var html='';
+        DATA.forEach(function(item,idx){
+            html+=renderCard(item,idx);
+        });
+        list.innerHTML=html;
+        bindCardEvents();
+    }
+    updatePreview();
+}
+
+function renderCard(item,idx){
+    var cover=String(item.cover||'').trim();
+    var coverHtml='';
+    if(cover){
+        coverHtml='<div class="cover-preview"><img src="'+escapeHtml(cover)+'" alt="cover" onerror="this.outerHTML=\'<div class=\\\'cover-ph\\\' style=\\\'width:60px;height:42px;border-radius:6px;border:1px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888\\\'>加载失败</div>\'" /></div>';
+    }else{
+        coverHtml='<div class="cover-preview"><div class="cover-ph">无封面</div></div>';
+    }
+    return ''+
+    '<div class="glass entry-card" data-idx="'+idx+'">'+
+        '<div class="entry-head">'+
+            '<span class="entry-idx">#'+(idx+1)+'</span>'+
+            '<div class="entry-actions">'+
+                '<button class="icon-btn up" data-act="up" title="上移"'+(idx===0?' disabled style="opacity:.4;cursor:not-allowed"':'')+'>↑</button>'+
+                '<button class="icon-btn down" data-act="down" title="下移"'+(idx===DATA.length-1?' disabled style="opacity:.4;cursor:not-allowed"':'')+'>↓</button>'+
+                '<button class="icon-btn del" data-act="del" title="删除">×</button>'+
+            '</div>'+
+        '</div>'+
+        '<div class="form-grid">'+
+            '<div class="field">'+
+                '<label>title 标题 *</label>'+
+                '<input type="text" data-field="title" value="'+escapeHtml(item.title||'')+'" placeholder="文章标题">'+
+            '</div>'+
+            '<div class="field">'+
+                '<label>file 文件名 *</label>'+
+                '<input type="text" data-field="file" value="'+escapeHtml(item.file||'')+'" placeholder="如 my-post.md">'+
+            '</div>'+
+            '<div class="field">'+
+                '<label>date 发布日期</label>'+
+                '<input type="date" data-field="date" value="'+escapeHtml((item.date||'').replace(/\//g,'-'))+'">'+
+            '</div>'+
+            '<div class="field">'+
+                '<label>cover 封面图（可选，点「选图」上传本地图片，会自动填路径并打包进 ZIP）</label>'+
+                '<div class="cover-input-row">'+
+                    '<input type="text" data-field="cover" value="'+escapeHtml(item.cover||'')+'" placeholder="如 img/xxx.png">'+
+                    '<label class="btn-mini" data-cover-pick>选图</label>'+
+                    '<input type="file" accept="image/*" data-cover-file style="display:none">'+
+                '</div>'+
+                coverHtml+
+            '</div>'+
+            '<div class="field full">'+
+                '<label>summary 卡片摘要</label>'+
+                '<textarea data-field="summary" placeholder="文章摘要，会显示在卡片上">'+escapeHtml(item.summary||'')+'</textarea>'+
+            '</div>'+
+            '<div class="field field-content">'+
+                '<div class="md-hint"><label>正文 markdown（左编辑 / 右实时预览，不写入 manifest.json）</label><span class="md-status">'+(String(item.content||'').length)+' 字</span></div>'+
+                '<div class="md-toolbar">'+
+                    '<button type="button" data-md="bold" title="加粗">加粗</button>'+
+                    '<button type="button" data-md="italic" title="斜体">斜体</button>'+
+                    '<span class="md-sep"></span>'+
+                    '<button type="button" data-md="h1" title="一级标题">H1</button>'+
+                    '<button type="button" data-md="h2" title="二级标题">H2</button>'+
+                    '<button type="button" data-md="h3" title="三级标题">H3</button>'+
+                    '<span class="md-sep"></span>'+
+                    '<button type="button" data-md="link" title="链接">链接</button>'+
+                    '<button type="button" data-md="image" title="图片">图片</button>'+
+                    '<span class="md-sep"></span>'+
+                    '<button type="button" data-md="quote" title="引用">引用</button>'+
+                    '<button type="button" data-md="ul" title="无序列表">列表</button>'+
+                    '<button type="button" data-md="ol" title="有序列表">编号</button>'+
+                    '<span class="md-sep"></span>'+
+                    '<button type="button" data-md="code" title="代码块">代码</button>'+
+                    '<button type="button" data-md="table" title="表格">表格</button>'+
+                    '<button type="button" data-md="hr" title="分割线">分割线</button>'+
+                '</div>'+
+                '<div class="md-split">'+
+                    '<textarea data-field="content" placeholder="# 标题&#10;&#10;正文（支持标准 markdown：加粗、列表、引用、代码块、表格…）">'+escapeHtml(item.content||'')+'</textarea>'+
+                    '<div class="md-preview" data-md-preview></div>'+
+                '</div>'+
+            '</div>'+
+        '</div>'+
+    '</div>';
+}
+
+function bindCardEvents(){
+    var cards=document.querySelectorAll('.entry-card');
+    cards.forEach(function(card){
+        var idx=parseInt(card.getAttribute('data-idx'),10);
+        // 字段输入
+        card.querySelectorAll('[data-field]').forEach(function(input){
+            input.addEventListener('input',function(){
+                var field=input.getAttribute('data-field');
+                DATA[idx][field]=input.value;
+                if(field==='cover'){
+                    // 手敲路径 → 清掉已选图（路径与文件可能不匹配）
+                    delete DATA[idx]._coverFile;
+                    // 实时更新封面预览
+                    var cp=card.querySelector('.cover-preview');
+                    var v=input.value.trim();
+                    if(v){
+                        cp.innerHTML='<img src="'+escapeHtml(v)+'" alt="cover" onerror="this.outerHTML=\'<div class=\\\'cover-ph\\\' style=\\\'width:60px;height:42px;border-radius:6px;border:1px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888\\\'>失败</div>\'" />';
+                    }else{
+                        cp.innerHTML='<div class="cover-ph">无封面</div>';
+                    }
+                }
+                if(field==='content'){
+                    var st=card.querySelector('.md-status');
+                    if(st) st.textContent=input.value.length+' 字';
+                    updateMdPreview(card, idx);
+                    return; // content 不影响 manifest 预览
+                }
+                updatePreview();
+            });
+        });
+        // 操作按钮
+        card.querySelectorAll('[data-act]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                var act=btn.getAttribute('data-act');
+                if(act==='up' && idx>0){
+                    var t=DATA[idx-1]; DATA[idx-1]=DATA[idx]; DATA[idx]=t;
+                    render();
+                }else if(act==='down' && idx<DATA.length-1){
+                    var t2=DATA[idx+1]; DATA[idx+1]=DATA[idx]; DATA[idx]=t2;
+                    render();
+                }else if(act==='del'){
+                    if(confirm('确认删除第 '+(idx+1)+' 条「'+(DATA[idx].title||'')+'」？')){
+                        DATA.splice(idx,1);
+                        render();
+                        toast('已删除','ok');
+                    }
+                }
+            });
+        });
+        // 工具栏按钮：一键插入 markdown 语法
+        card.querySelectorAll('[data-md]').forEach(function(btn){
+            btn.addEventListener('click',function(e){
+                e.preventDefault();
+                handleMdAction(card, idx, btn.getAttribute('data-md'));
+            });
+        });
+        // cover 选图：本地图片 → 转 webp 压缩 → 自动填 img/路径 + 存 Blob 用于打包 ZIP
+        var coverFile=card.querySelector('[data-cover-file]');
+        var coverPick=card.querySelector('[data-cover-pick]');
+        if(coverPick && coverFile){
+            coverPick.addEventListener('click',function(){ coverFile.click(); });
+            coverFile.addEventListener('change',function(e){
+                var f=e.target.files[0];
+                if(!f) return;
+                e.target.value='';
+                toast('正在转 webp 压缩…');
+                convertToWebp(f, function(res){
+                    if(!res){ toast('图片读取失败，请换一张','error'); return; }
+                    var baseName=f.name.replace(/\.[^.]+$/,'');
+                    var fn='img/'+baseName+'.'+res.ext;
+                    DATA[idx].cover=fn;
+                    DATA[idx]._coverFile=res.blob;
+                    var ci=card.querySelector('input[data-field="cover"]');
+                    if(ci) ci.value=fn;
+                    var cp=card.querySelector('.cover-preview');
+                    if(cp){ cp.innerHTML='<img src="'+URL.createObjectURL(res.blob)+'" alt="cover" />'; }
+                    updatePreview();
+                    var note=res.ok
+                        ? ('（'+fmtKB(res.oldSize)+' → '+fmtKB(res.newSize)+'）')
+                        : '（浏览器不支持 webp，保留原格式）';
+                    toast('已选图：'+fn+note,'ok');
+                });
+            });
+        }
+        // 恢复已选封面图预览（render 重建后路径预览可能加载失败，用内存 Blob 重建）
+        if(DATA[idx]._coverFile){
+            var cpv=card.querySelector('.cover-preview');
+            if(cpv){ cpv.innerHTML='<img src="'+URL.createObjectURL(DATA[idx]._coverFile)+'" alt="cover" />'; }
+        }
+        // 初始化 md 实时预览
+        updateMdPreview(card, idx);
+    });
+}
+
+// 渲染单卡的 md 预览（与文章详情页 marked.js 渲染一致）
+function updateMdPreview(card, idx){
+    var pv=card.querySelector('[data-md-preview]');
+    if(!pv) return;
+    var md=(DATA[idx] && DATA[idx].content)||'';
+    try{
+        if(typeof marked!=='undefined') pv.innerHTML=marked.parse(md);
+        else pv.textContent='marked.js 未加载，预览不可用';
+    }catch(e){
+        pv.textContent='预览失败：'+e.message;
+    }
+}
+
+// 图片转 webp：用 Canvas 重绘后 toBlob(image/webp)，不支持则回退原文件
+// 返回 { blob, ext, ok, oldSize, newSize }
+function convertToWebp(file, cb){
+    var oldSize=file.size;
+    var url=URL.createObjectURL(file);
+    var img=new Image();
+    img.onload=function(){
+        var canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth || img.width;
+        canvas.height=img.naturalHeight || img.height;
+        var ctx=canvas.getContext('2d');
+        // 白底（避免透明 png 转 webp 后变黑）
+        ctx.fillStyle='#ffffff';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);
+        URL.revokeObjectURL(url);
+        try{
+            canvas.toBlob(function(blob){
+                if(blob && blob.type==='image/webp'){
+                    cb({ blob:blob, ext:'webp', ok:true, oldSize:oldSize, newSize:blob.size });
+                }else{
+                    // 浏览器不支持 webp 编码 → 回退原文件
+                    cb({ blob:file, ext:(file.name.split('.').pop()||'jpg'), ok:false, oldSize:oldSize, newSize:oldSize });
+                }
+            }, 'image/webp', 0.82);
+        }catch(e){
+            cb({ blob:file, ext:(file.name.split('.').pop()||'jpg'), ok:false, oldSize:oldSize, newSize:oldSize });
+        }
+    };
+    img.onerror=function(){ URL.revokeObjectURL(url); cb(null); };
+    img.src=url;
+}
+
+function fmtKB(n){ return (n/1024).toFixed(1)+'KB'; }
+
+// 同步单卡 md 编辑后的 UI（数据 / 预览 / 字数）
+function syncMdUi(card, idx){
+    var ta=card.querySelector('textarea[data-field="content"]');
+    if(ta) DATA[idx].content=ta.value;
+    updateMdPreview(card, idx);
+    var st=card.querySelector('.md-status');
+    if(st) st.textContent=(DATA[idx].content||'').length+' 字';
+}
+
+// 在光标处插入包裹语法（有选区则包裹选区，无则插入占位符并选中）
+function insertMd(card, idx, before, after, placeholder){
+    var ta=card.querySelector('textarea[data-field="content"]');
+    if(!ta) return;
+    var start=ta.selectionStart, end=ta.selectionEnd;
+    var sel=ta.value.substring(start,end);
+    var text=sel||placeholder||'';
+    var insert=before+text+after;
+    ta.value=ta.value.substring(0,start)+insert+ta.value.substring(end);
+    DATA[idx].content=ta.value;
+    ta.focus();
+    var cs=start+before.length, ce=cs+text.length;
+    ta.setSelectionRange(cs, ce);
+    syncMdUi(card, idx);
+}
+
+// 在光标处插入整块（代码块 / 表格 / 分割线等），自动补前置换行
+function insertMdBlock(card, idx, block){
+    var ta=card.querySelector('textarea[data-field="content"]');
+    if(!ta) return;
+    var start=ta.selectionStart, end=ta.selectionEnd;
+    var prefix=(start>0 && ta.value[start-1]!=='\n') ? '\n' : '';
+    var insert=prefix+block;
+    ta.value=ta.value.substring(0,start)+insert+ta.value.substring(end);
+    DATA[idx].content=ta.value;
+    ta.focus();
+    var pos=start+insert.length;
+    ta.setSelectionRange(pos, pos);
+    syncMdUi(card, idx);
+}
+
+// 工具栏动作分发
+function handleMdAction(card, idx, action){
+    switch(action){
+        case 'bold':   return insertMd(card,idx,'**','**','加粗');
+        case 'italic': return insertMd(card,idx,'*','*','斜体');
+        case 'h1':     return insertMd(card,idx,'# ','','一级标题');
+        case 'h2':     return insertMd(card,idx,'## ','','二级标题');
+        case 'h3':     return insertMd(card,idx,'### ','','三级标题');
+        case 'link':   return insertMd(card,idx,'[','](https://)','链接文字');
+        case 'image':  return insertMd(card,idx,'![','](img/xxx.png)','图片说明');
+        case 'quote':  return insertMd(card,idx,'> ','','引用内容');
+        case 'ul':     return insertMd(card,idx,'- ','','列表项');
+        case 'ol':     return insertMd(card,idx,'1. ','','列表项');
+        case 'code':   return insertMdBlock(card,idx,'```\ncode\n```');
+        case 'table':  return insertMdBlock(card,idx,'| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |');
+        case 'hr':     return insertMdBlock(card,idx,'---');
+    }
+}
+
+// 剥离 content 字段，得到纯净的 manifest 数组（用于预览 / 下载 JSON / 打包 ZIP 中的 manifest.json）
+function manifestOnly(){
+    return DATA.map(function(it){
+        return {
+            title: it.title||'',
+            file: it.file||'',
+            date: it.date||'',
+            summary: it.summary||'',
+            cover: it.cover||''
+        };
+    });
+}
+
+function updatePreview(){
+    var pre=$('jsonPreview');
+    try{
+        pre.textContent=JSON.stringify(manifestOnly(),null,2);
+    }catch(e){
+        pre.textContent='// 序列化失败：'+e.message;
+    }
+}
+
+function newEntry(){
+    return {
+        title:'新文章标题',
+        file:'new-post.md',
+        date:todayStr(),
+        summary:'在这里写摘要…',
+        cover:'',
+        content:'# 新文章标题\n\n在这里写正文…'
+    };
+}
+
+// ========= 工具栏事件 =========
+$('btnAdd').addEventListener('click',function(){
+    DATA.push(newEntry());
+    render();
+    // 滚动到新条目
+    var cards=document.querySelectorAll('.entry-card');
+    if(cards.length){
+        cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+        var firstInput=cards[cards.length-1].querySelector('input[data-field="title"]');
+        if(firstInput){ firstInput.focus(); firstInput.select(); }
+    }
+    toast('已新增条目','ok');
+});
+
+$('btnReload').addEventListener('click',function(){
+    if(confirm('重新加载会丢弃当前未导出的修改，确定？')){
+        loadRemote();
+    }
+});
+
+$('btnClear').addEventListener('click',function(){
+    if(DATA.length===0){ toast('已为空'); return; }
+    if(confirm('确认清空所有条目？（仅清空编辑器，不影响原文件，需导出后才生效）')){
+        DATA=[];
+        showDropZone();
+        $('fileInfo').textContent='已清空，请重新上传或新增';
+        render();
+        toast('已清空','ok');
+    }
+});
+
+// 公共校验：title/file 必填，file 不能重复
+function validateData(){
+    var errIdx=-1, msg='';
+    var seen={};
+    for(var i=0;i<DATA.length;i++){
+        var t=String(DATA[i].title||'').trim();
+        var f=String(DATA[i].file||'').trim();
+        if(!t || !f){ errIdx=i; msg='第 '+(i+1)+' 条 title/file 必填'; break; }
+        if(seen[f]){ errIdx=i; msg='第 '+(i+1)+' 条 file 文件名「'+f+'」重复'; break; }
+        seen[f]=true;
+    }
+    return { errIdx:errIdx, msg:msg };
+}
+
+$('btnExport').addEventListener('click',function(){
+    if(DATA.length===0){ toast('暂无条目','error'); return; }
+    var v=validateData();
+    if(v.errIdx>=0){
+        toast(v.msg,'error');
+        render();
+        var c=document.querySelectorAll('.entry-card')[v.errIdx];
+        if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+    }
+    var json=JSON.stringify(manifestOnly(),null,2);
+    var blob=new Blob([json],{type:'application/json;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='manifest.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('已下载 manifest.json，请替换 a2/manifest.json','ok');
+});
+
+// 打包 ZIP：manifest.json + 每条文章的 .md
+$('btnZip').addEventListener('click',function(){
+    if(DATA.length===0){ toast('暂无条目','error'); return; }
+    var v=validateData();
+    if(v.errIdx>=0){
+        toast(v.msg,'error');
+        render();
+        var c=document.querySelectorAll('.entry-card')[v.errIdx];
+        if(c) c.scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+    }
+    if(typeof JSZip==='undefined'){
+        toast('JSZip 库未加载，请联网后刷新','error');
+        return;
+    }
+    var zip=new JSZip();
+    // a1/ 文件夹放 manifest + md，解压后直接替换项目 a1/
+    var folder=zip.folder('a1');
+    folder.file('manifest.json', JSON.stringify(manifestOnly(),null,2));
+    var mdCount=0, imgCount=0;
+    DATA.forEach(function(it){
+        var fn=String(it.file||'').trim();
+        if(!fn) return;
+        if(!/\.md$/i.test(fn)) fn+='.md';
+        folder.file(fn, it.content||'');
+        mdCount++;
+        // 本地选过的封面图 → 按 cover 路径打包进 zip 根（img/xxx.jpg）
+        if(it._coverFile){
+            var coverFn=String(it.cover||'').trim();
+            if(coverFn){
+                zip.file(coverFn, it._coverFile);
+                imgCount++;
+            }
+        }
+    });
+    toast('正在打包…');
+    zip.generateAsync({type:'blob'}).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;
+        a.download='a1.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        var summary='已下载 a1.zip（manifest.json + '+mdCount+' 篇 md'+(imgCount?(' + '+imgCount+' 张封面图'):'')+'）';
+        toast(summary,'ok');
+    }).catch(function(err){
+        toast('打包失败：'+err.message,'error');
+    });
+});
+
+$('fileImport').addEventListener('change',function(e){
+    if(!e.target.files || !e.target.files.length) return;
+    handleFileUpload(e.target.files);
+    e.target.value=''; // 允许再次选择同一文件
+});
+
+// ========= 拖拽上传区 =========
+var dropZone=$('dropZone');
+var dropInput=$('dropInput');
+dropZone.addEventListener('click',function(){ dropInput.click(); });
+dropInput.addEventListener('change',function(e){
+    if(!e.target.files || !e.target.files.length) return;
+    handleFileUpload(e.target.files);
+    e.target.value='';
+});
+['dragenter','dragover'].forEach(function(evt){
+    dropZone.addEventListener(evt,function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+    });
+});
+['dragleave','drop'].forEach(function(evt){
+    dropZone.addEventListener(evt,function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+    });
+});
+dropZone.addEventListener('drop',function(e){
+    if(e.dataTransfer.files && e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files);
+});
+// 整页拖拽也支持（上传后仍可继续拖新文件覆盖）
+['dragover','drop'].forEach(function(evt){
+    window.addEventListener(evt,function(e){ e.preventDefault(); });
+});
+
+$('btnCopy').addEventListener('click',function(){
+    var text=$('jsonPreview').textContent;
+    if(navigator.clipboard){
+        navigator.clipboard.writeText(text).then(function(){
+            toast('已复制到剪贴板','ok');
+        }).catch(function(){ fallbackCopy(text); });
+    }else{
+        fallbackCopy(text);
+    }
+});
+function fallbackCopy(text){
+    var ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('已复制','ok'); }
+    catch(e){ toast('复制失败','error'); }
+    document.body.removeChild(ta);
+}
+
+// ========= 启动 =========
+// 默认显示上传引导，不自动 fetch（避免本地双击打开报 CORS）
+$('fileInfo').textContent='请上传 manifest.json + .md 文章开始编辑';
+$('entryList').innerHTML='';
+$('jsonPreview').textContent='// 上传 a1/manifest.json 后这里会显示实时 manifest（不含正文）';
+
+// 若通过 http(s) 访问，可自动尝试加载一次（失败则保持上传引导）
+if(location.protocol==='http:' || location.protocol==='https:'){
+    loadRemote();
+}
+</script>
+</body>
+</html>

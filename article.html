@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情</title>
+    <link rel="stylesheet" href="a3.css">
+    <link rel="stylesheet" href="https://player.xfyun.club/js/xf-Picture-Blackbox/xf-PictureBlackbox.min.css">
+    <script src="xf-page-transition.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .article-detail { max-width: 820px; margin: 0 auto 40px; padding: 0; grid-column: 1; }
+        .article-back { display: inline-block; color: #ddd; text-decoration: none; font-size: 14px; margin-bottom: 18px; padding: 6px 14px; border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; background: rgba(255,255,255,0.06); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: background 0.2s, color 0.2s; }
+        .article-back:hover { background: rgba(255,255,255,0.16); color: #fff; }
+        .article-header { margin-bottom: 24px; }
+        .article-title { font-size: 30px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        .article-meta { font-size: 13px; color: #bbb; }
+        .article-body { color: #eee; font-size: 16px; line-height: 1.8; }
+        .article-body h1,.article-body h2,.article-body h3,.article-body h4 { color: #fff; margin: 1.4em 0 0.6em; line-height: 1.3; }
+        .article-body h1 { font-size: 26px; }
+        .article-body h2 { font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 6px; }
+        .article-body h3 { font-size: 18px; }
+        .article-body p { margin: 0.8em 0; }
+        .article-body a { color: #6db3ff; text-decoration: none; }
+        .article-body a:hover { text-decoration: underline; }
+        .article-body ul,.article-body ol { margin: 0.8em 0; padding-left: 1.6em; }
+        .article-body li { margin: 0.3em 0; }
+        .article-body blockquote { border-left: 3px solid rgba(255,255,255,0.35); padding: 6px 14px; margin: 1em 0; color: #ccc; background: rgba(255,255,255,0.04); border-radius: 0 8px 8px 0; }
+        .article-body code { background: rgba(0,0,0,0.35); padding: 2px 6px; border-radius: 4px; font-size: 14px; color: #fceb92; }
+        .article-body pre { background: rgba(0,0,0,0.45); padding: 14px 16px; border-radius: 10px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.1); margin: 1em 0; }
+        .article-body pre code { background: transparent; padding: 0; color: #eee; font-size: 14px; }
+        .article-body img { max-width: 100%; border-radius: 10px; margin: 1em 0; }
+        .article-body table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 14px; }
+        .article-body th,.article-body td { border: 1px solid rgba(255,255,255,0.15); padding: 8px 12px; text-align: left; }
+        .article-body th { background: rgba(255,255,255,0.08); color: #fff; }
+        .article-body hr { border: none; border-top: 1px solid rgba(255,255,255,0.15); margin: 1.6em 0; }
+        .article-error { text-align: center; color: #ff9d9d; font-size: 16px; padding: 40px 0; }
+        @media (max-width: 820px) { .article-detail { padding: 0 20px; } .article-title { font-size: 24px; } }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">文章</div>
+    <button class="nav-toggle" id="navToggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+    </button>
+    <nav id="navMenu">
+        <a href="index.html">首页</a>
+        <a href="index1.html">项目</a>
+        <a href="index2.html">文章</a>
+        <a href="JavaScript:;" class="xf-PicBlackbox" data-pic="img/aaa.jpg">赞助</a>
+    </nav>
+</header>
+
+<main>
+<article class="article-detail">
+    
+    <div class="article-header">
+        <h1 class="article-title" id="articleTitle">加载中…</h1>
+        <div class="article-meta" id="articleMeta"></div>
+    </div>
+    <div class="glass article-body" id="articleBody">
+        <p>正在读取文章…</p>
+    </div>
+</article>
+
+<div class="right-col">
+    <div id="profileArea"></div></br>
+    <div class="glass time-card xf_time xf_glass">
+        <div class="xf_clock">
+            <div class="hand hours"></div>
+            <div class="hand minutes"></div>
+            <div class="hand seconds"></div>
+            <div class="point"></div>
+            <div class="marker">
+                <span class="marker_time marker__1"></span>
+                <span class="marker_time marker__2"></span>
+                <span class="marker_time marker__3"></span>
+                <span class="marker_time marker__4"></span>
+            </div>
+        </div>
+        <div class="display_time">
+            <h3 class="xf_time_1">00:00</h3>
+            <h4 class="xf_time_2">0000年00月00日</h4>
+            <h5 class="xf_time_3">星期?</h5>
+        </div>
+    </div>
+    <div class="glass stat-grid" id="statGrid"></div>
+</div>
+</main>
+
+<footer>
+    <div>Copyright &copy; 2026 心悦. All Rights Reserved</div>
+</footer>
+
+<script src="xf-common.js"></script>
+<script>
+// ===== 本页专属：文章详情（从 URL ?file=xxx.md 读取并用 marked.js 渲染） =====
+function getQuery(name){
+    var params=new URLSearchParams(location.search);
+    return params.get(name);
+}
+function xfPageInit(){
+    var file=getQuery('file');
+    var titleEl=document.getElementById('articleTitle');
+    var metaEl=document.getElementById('articleMeta');
+    var bodyEl=document.getElementById('articleBody');
+    if(!file){
+        titleEl.innerText='参数错误';
+        bodyEl.innerHTML='<div class="article-error">未指定文章文件，请从文章列表进入。</div>';
+        return;
+    }
+    fetch('a2/manifest.json')
+        .then(function(r){ return r.json(); })
+        .then(function(list){
+            var info=list.find(function(a){ return a.file===file; }) || {};
+            titleEl.innerText=info.title || file;
+            if(info.date){ metaEl.innerText='发布日期：'+info.date; }
+            return fetch('a2/'+encodeURIComponent(file));
+        })
+        .then(function(r){
+            if(!r.ok) throw new Error('文章读取失败：'+r.status);
+            return r.text();
+        })
+        .then(function(md){
+            bodyEl.innerHTML=marked.parse(md);
+        })
+        .catch(function(err){
+            titleEl.innerText='文章读取失败';
+            bodyEl.innerHTML='<div class="article-error">'+err.message+'</div>';
+        });
+}
+xfPageInit();
+</script>
+</body>
+</html>

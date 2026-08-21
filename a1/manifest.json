@@ -1,0 +1,16 @@
+[
+  {
+    "title": "欢迎使用文章系统",
+    "file": "welcome.md",
+    "date": "2026-08-20",
+    "summary": "把 md 文件丢进 a2/ 文件夹，并在此 manifest.json 里加一条记录，文章主页与详情页就会自动显示。",
+    "cover": "img/R-C.jpg"
+  },
+  {
+    "title": "22222222",
+    "file": "new-post.md",
+    "date": "2026-08-20",
+    "summary": "在这里写摘要…",
+    "cover": "img/屏幕截图 2026-08-17 161416.webp"
+  }
+]

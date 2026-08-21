@@ -1,0 +1,30 @@
+{
+  "profile": {
+    "avatar": "img/微信图片_2026-08-20_010812_278.jpg",
+    "name": "心悦",
+    "desc": "这里是简介"
+  },
+  "socials": [
+    {
+      "type": "link",
+      "text": "🔗",
+      "href": "ttt-editor.html"
+    },
+    {
+      "type": "link",
+      "text": "🔗",
+      "href": "a2-editor.html"
+    },
+    {
+      "type": "pic",
+      "text": "🔗",
+      "pic": "img/微信图片_2026-08-20_010812_278.jpg",
+      "popup": "文字"
+    }
+  ],
+  "stats": {
+    "startDate": "2024-03-01",
+    "experienceStart": "2024-03-01",
+    "projectCount": 6
+  }
+}

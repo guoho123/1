@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章</title>
+    <link rel="stylesheet" href="a3.css">
+    <link rel="stylesheet" href="https://player.xfyun.club/js/xf-Picture-Blackbox/xf-PictureBlackbox.min.css">
+    <script src="xf-page-transition.js"></script>
+</head>
+<body>
+<header>
+    <div class="logo">文章</div>
+    <button class="nav-toggle" id="navToggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+    </button>
+    <nav id="navMenu">
+        <a href="index.html">首页</a>
+        <a href="index1.html">项目</a>
+        <a href="index2.html">文章</a>
+        <a href="JavaScript:;" class="xf-PicBlackbox" data-pic="img/aaa.jpg">赞助</a>
+    </nav>
+</header>
+
+<main>
+    <div class="left-col" id="articleList">
+        <!-- 文章卡片由 JS 读取 a2/manifest.json 动态生成 -->
+    </div>
+
+    <div class="right-col">
+        <div id="profileArea"></div></br>
+        <div class="glass time-card xf_time xf_glass">
+            <div class="xf_clock">
+                <div class="hand hours"></div>
+                <div class="hand minutes"></div>
+                <div class="hand seconds"></div>
+                <div class="point"></div>
+                <div class="marker">
+                    <span class="marker_time marker__1"></span>
+                    <span class="marker_time marker__2"></span>
+                    <span class="marker_time marker__3"></span>
+                    <span class="marker_time marker__4"></span>
+                </div>
+            </div>
+            <div class="display_time">
+                <h3 class="xf_time_1">00:00</h3>
+                <h4 class="xf_time_2">0000年00月00日</h4>
+                <h5 class="xf_time_3">星期?</h5>
+            </div>
+        </div>
+        <div class="glass stat-grid" id="statGrid"></div>
+    </div>
+</main>
+
+<footer>
+    <div>Copyright &copy; 2026 心悦. All Rights Reserved</div>
+</footer>
+
+<script src="xf-common.js"></script>
+<script>
+// ===== 本页专属：文章列表 =====
+function renderArticleList(list){
+    var box=document.getElementById('articleList');
+    if(!box) return;
+    box.innerHTML='';
+    if(!list.length){
+        box.innerHTML='<div class="glass">暂无文章，把 md 放进 a2/ 并在 manifest.json 里登记即可。</div>';
+        return;
+    }
+    list.forEach(function(a){
+        var cover=a.cover || 'img/屏幕截图 2026-08-17 161416.png';
+        var title=a.title || '未命名文章';
+        var summary=a.summary || '';
+        var date=a.date || '';
+        var file=a.file || '';
+        var card=document.createElement('div');
+        card.className='glass time-card xf_timee xf_glass';
+        card.innerHTML='<div class="card-img-skeleton" data-src="'+cover+'" data-text="'+title+'"><div class="skeleton-shimmer"></div></div><a class="hrefa" href="article.html?file='+encodeURIComponent(file)+'">'+title+'</a>'+(date?'<div class="article-date">'+date+'</div>':'')+(summary?'<div class="article-summary">'+summary+'</div>':'');
+        box.appendChild(card);
+    });
+    requestAnimationFrame(loadCardImages);
+}
+function loadCardImages(){
+    var imgs=document.querySelectorAll('.card-img-skeleton');
+    if(!imgs.length) return;
+    if('IntersectionObserver' in window){
+        var io=new IntersectionObserver(function(entries){
+            entries.forEach(function(entry){
+                if(entry.isIntersecting){
+                    loadSingleImage(entry.target);
+                    io.unobserve(entry.target);
+                }
+            });
+        },{rootMargin:'100px'});
+        imgs.forEach(function(img){ io.observe(img); });
+    } else {
+        imgs.forEach(function(img){ loadSingleImage(img); });
+    }
+}
+function loadSingleImage(el){
+    var src=el.dataset.src;
+    var text=el.dataset.text || '';
+    if(!src) return;
+    var img=new Image();
+    img.alt=text;
+    img.className='xf-PicBlackbox xf-showImg';
+    img.width=200;
+    img.onload=function(){ el.replaceWith(img); };
+    img.onerror=function(){ el.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:20px 0">图片加载失败</div>'; };
+    img.src=src;
+}
+// pjax 切换到本页时执行的初始化
+function xfPageInit(){
+    fetch('a2/manifest.json')
+        .then(function(r){ return r.json(); })
+        .then(function(list){ renderArticleList(list); })
+        .catch(function(){
+            var box=document.getElementById('articleList');
+            if(box) box.innerHTML='<div class="glass">读取文章列表失败，请检查 a2/manifest.json 是否存在。</div>';
+        });
+}
+xfPageInit();
+</script>
+</body>
+</html>

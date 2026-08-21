@@ -1,0 +1,16 @@
+[
+  {
+    "title": "欢迎使用文章系统",
+    "file": "welcome.md",
+    "date": "2026-08-20",
+    "summary": "把 md 文件丢进 a2/ 文件夹，并在此 manifest.json 里加一条记录，文章主页与详情页就会自动显示。",
+    "cover": "img/R-C.jpg"
+  },
+  {
+    "title": "可视化编辑器",
+    "file": "2.md",
+    "date": "2026-08-20",
+    "summary": "文章管理，项目文章管理，信息编辑器\na2-editor.html，a1-editor.html，ttt-editor.html",
+    "cover": "img/屏幕截图 2026-08-21 012628.webp"
+  }
+]
