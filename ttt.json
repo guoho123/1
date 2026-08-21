@@ -1,30 +1,31 @@
 {
   "profile": {
-    "avatar": "img/微信图片_2026-08-20_010812_278.jpg",
+    "avatar": "https://backend.appmiaoda.com/projects/supabase315431189554966528/storage/v1/object/public/avatars/avatar_1786799817370.jpg",
     "name": "心悦",
-    "desc": "这里是简介"
+    "desc": "//初中生 14岁 广东\n//邮箱：zxcvbnm147025@qq.com\n//本项目已发布至GitHub"
   },
   "socials": [
     {
-      "type": "link",
-      "text": "🔗",
-      "href": "ttt-editor.html"
-    },
-    {
-      "type": "link",
-      "text": "🔗",
-      "href": "a2-editor.html"
+      "type": "pic",
+      "text": "V",
+      "pic": "https://backend.appmiaoda.com/projects/supabase315431189554966528/storage/v1/object/public/editor-files/1787246155201_vg6ekkrj199.png",
+      "popup": "（文字可复制）我的微信：qaz1470251"
     },
     {
       "type": "pic",
-      "text": "🔗",
-      "pic": "img/微信图片_2026-08-20_010812_278.jpg",
-      "popup": "文字"
+      "text": "Q",
+      "pic": "https://backend.appmiaoda.com/projects/supabase315431189554966528/storage/v1/object/public/editor-files/1787246055525_vyvpnebe7k.png",
+      "popup": ""
+    },
+    {
+      "type": "link",
+      "text": "ks",
+      "href": "https://live.kuaishou.com/profile/guo20120515?fid=1830071306&cc=share_copylink&followRefer=151&shareMethod=TOKEN&kpn=KUAISHOU&subBiz=PROFILE&shareId=19086473769166&shareToken=X2VN5Jk1x9aw1NZ&shareResourceType=PROFILE_SELF&shareMode=APP&originShareId=19086473769166&appType=21&shareObjectId=1830071306&shareUrlOpened=0&timestamp=1787246294643"
     }
   ],
   "stats": {
-    "startDate": "2024-03-01",
-    "experienceStart": "2024-03-01",
-    "projectCount": 6
+    "startDate": "2023-06-01",
+    "experienceStart": "2023-08-09",
+    "projectCount": 8
   }
 }
