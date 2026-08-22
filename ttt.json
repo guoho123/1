@@ -19,12 +19,12 @@
     },
     {
       "type": "link",
-      "text": "<img alt=\"ks\" src=\"http://www.5imh.xyz/img/ks.png\" style=\"height: 70%;\">",
+      "text": "<img alt=\"ks\" src=\"img/ks.png\" style=\"height: 70%;\">",
       "href": "https://live.kuaishou.com/profile/guo20120515?fid=1830071306&cc=share_copylink&followRefer=151&shareMethod=TOKEN&kpn=KUAISHOU&subBiz=PROFILE&shareId=19086473769166&shareToken=X2VN5Jk1x9aw1NZ&shareResourceType=PROFILE_SELF&shareMode=APP&originShareId=19086473769166&appType=21&shareObjectId=1830071306&shareUrlOpened=0&timestamp=1787246294643"
     },
     {
       "type": "link",
-      "text": "<img alt=\"gitee\" src=\"http://www.5imh.xyz/img/logo_gitee_g_red.png\" style=\"height: 70%;\">",
+      "text": "<img alt=\"gitee\" src=\"img/logo_gitee_g_red.png\" style=\"height: 70%;\">",
       "href": "https://gitee.com/mini-circuit"
     }
   ],
@@ -32,7 +32,7 @@
     {
       "text": "个人博客",
       "href": "https://app-brofqz1pg9a9.appmiaoda.com/blog",
-      "cover": "http://www.5imh.xyz/img/屏幕截图 2026-08-22 145242.png"
+      "cover": "img/屏幕截图 2026-08-22 145242.png"
     }
   ],
   "stats": {
