@@ -161,7 +161,7 @@
     <h1 class="editor-title">ttt.json 个人信息编辑器</h1>
     <p class="editor-sub">
         字段规范（参考首页 / 文章页读取逻辑）：<br>
-        <b>profile</b> 头像/昵称/简介 · <b>socials</b> 社交按钮数组（link 普通链接 / pic 点击弹窗图） · <b>stats</b> 入坑日期 / 经验开始日期 / 项目数量<br>
+        <b>profile</b> 头像/昵称/简介 · <b>socials</b> 社交按钮数组（link 普通链接 / pic 点击弹窗图） · <b>sites</b> 我的其他网站数组（text 名称 / href 跳转地址 / cover 封面图） · <b>stats</b> 入坑日期 / 经验开始日期 / 项目数量<br>
         浏览器无法直接写本地，用「下载 JSON」生成 <code style="color:#82b8ff">ttt.json</code> 替换原文件。
     </p>
 
@@ -195,6 +195,15 @@
             <button class="btn btn-primary" id="btnAddSocial" style="padding:6px 12px;font-size:13px">+ 新增</button>
         </div>
         <div class="social-list" id="socialList"></div>
+    </div>
+
+    <!-- sites -->
+    <div class="glass section">
+        <div class="section-title">
+            我的其他网站 <small>sites（点击跳转外部站点）</small>
+            <button class="btn btn-primary" id="btnAddSite" style="padding:6px 12px;font-size:13px">+ 新增</button>
+        </div>
+        <div class="social-list" id="siteList"></div>
     </div>
 
     <!-- stats -->
@@ -237,6 +246,9 @@ function defaultData(){
         profile:{ avatar:'', name:'', desc:'' },
         socials:[
             { type:'link', text:'🔗', href:'#' }
+        ],
+        sites:[
+            { text:'', href:'', cover:'' }
         ],
         stats:{ startDate:'2024-03-01', experienceStart:'2024-03-01', projectCount:0 }
     };
@@ -316,6 +328,100 @@ function renderSocials(){
     });
     list.innerHTML=html;
     bindSocialEvents();
+}
+
+// ========= 渲染 sites =========
+function renderSites(){
+    var list=$('siteList');
+    var arr=DATA.sites||[];
+    if(arr.length===0){
+        list.innerHTML='<div style="color:#888;font-size:13px;padding:8px 0">暂无网站，点「+ 新增」添加。</div>';
+        return;
+    }
+    var html='';
+    arr.forEach(function(s,idx){
+        var text=s.text||'';
+        var href=s.href||'';
+        var cover=s.cover||'';
+        var coverThumb = cover
+            ? '<div class="thumb-row"><img src="'+escapeHtml(cover)+'" alt="cover" onerror="this.outerHTML=\'<div class=\\\'ph\\\' style=\\\'width:60px;height:42px;border-radius:6px;border:1px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888\\\'>失败</div>\'" /></div>'
+            : '<div class="thumb-row"><div class="ph">无图</div></div>';
+        html+=
+        '<div class="social-item" data-sidx="'+idx+'">'+
+            '<div class="social-head">'+
+                '<div style="font-size:12px;color:#aaa">网站 #'+(idx+1)+'</div>'+
+                '<div class="social-actions">'+
+                    '<button type="button" class="icon-btn up" data-siteact="up" title="上移"'+(idx===0?' disabled style="opacity:.4;cursor:not-allowed"':'')+'>↑</button>'+
+                    '<button type="button" class="icon-btn down" data-siteact="down" title="下移"'+(idx===arr.length-1?' disabled style="opacity:.4;cursor:not-allowed"':'')+'>↓</button>'+
+                    '<button type="button" class="icon-btn del" data-siteact="del" title="删除">×</button>'+
+                '</div>'+
+            '</div>'+
+            '<div class="form-grid">'+
+                '<div class="field">'+
+                    '<label>text 按钮文字</label>'+
+                    '<input type="text" data-sitefield="text" value="'+escapeHtml(text)+'" placeholder="如 GitHub">'+
+                '</div>'+
+                '<div class="field">'+
+                    '<label>href 跳转地址</label>'+
+                    '<input type="text" data-sitefield="href" value="'+escapeHtml(href)+'" placeholder="如 https://...">'+
+                '</div>'+
+                '<div class="field full">'+
+                    '<label>cover 封面图路径</label>'+
+                    '<input type="text" data-sitefield="cover" value="'+escapeHtml(cover)+'" placeholder="如 img/xxx.jpg 或 https://...">'+
+                    coverThumb+
+                '</div>'+
+            '</div>'+
+        '</div>';
+    });
+    list.innerHTML=html;
+    bindSiteEvents();
+}
+
+function bindSiteEvents(){
+    document.querySelectorAll('.social-item[data-sidx]').forEach(function(item){
+        var idx=parseInt(item.getAttribute('data-sidx'),10);
+        // 字段输入
+        item.querySelectorAll('[data-sitefield]').forEach(function(input){
+            input.addEventListener('input',function(){
+                var f=input.getAttribute('data-sitefield');
+                DATA.sites[idx][f]=input.value;
+                // cover 变化更新缩略图
+                if(f==='cover'){
+                    var tr=item.querySelector('.thumb-row');
+                    var v=input.value.trim();
+                    if(v){
+                        tr.innerHTML='<img src="'+escapeHtml(v)+'" alt="cover" onerror="this.outerHTML=\'<div class=\\\'ph\\\' style=\\\'width:60px;height:42px;border-radius:6px;border:1px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888\\\'>失败</div>\'" />';
+                    }else{
+                        tr.innerHTML='<div class="ph">无图</div>';
+                    }
+                }
+                updatePreview();
+            });
+        });
+        // 排序 / 删除
+        item.querySelectorAll('[data-siteact]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                var act=btn.getAttribute('data-siteact');
+                if(act==='up' && idx>0){
+                    var t=DATA.sites[idx-1]; DATA.sites[idx-1]=DATA.sites[idx]; DATA.sites[idx]=t;
+                    renderSites();
+                }else if(act==='down' && idx<DATA.sites.length-1){
+                    var t2=DATA.sites[idx+1]; DATA.sites[idx+1]=DATA.sites[idx]; DATA.sites[idx]=t2;
+                    renderSites();
+                }else if(act==='del'){
+                    if(confirm('确认删除第 '+(idx+1)+' 个网站？')){
+                        DATA.sites.splice(idx,1);
+                        renderSites();
+                        toast('已删除','ok');
+                    }
+                }
+            });
+        });
+    });
+}
+
+function newSite(){
+    return { text:'', href:'', cover:'' };
 }
 
 // ========= 渲染 stats =========
@@ -434,9 +540,11 @@ function newSocial(){
 function renderAll(){
     if(!DATA.profile) DATA.profile={ avatar:'', name:'', desc:'' };
     if(!Array.isArray(DATA.socials)) DATA.socials=[];
+    if(!Array.isArray(DATA.sites)) DATA.sites=[];
     if(!DATA.stats) DATA.stats={ startDate:'', experienceStart:'', projectCount:0 };
     renderProfile();
     renderSocials();
+    renderSites();
     renderStats();
     updatePreview();
 }
@@ -456,6 +564,9 @@ function updatePreview(){
                     return { type:'pic', text:s.text||'', pic:s.pic||'', popup:s.popup||'' };
                 }
                 return { type:'link', text:s.text||'', href:s.href||'' };
+            }),
+            sites: (DATA.sites||[]).map(function(t){
+                return { text:t.text||'', href:t.href||'', cover:t.cover||'' };
             }),
             stats:{
                 startDate: DATA.stats.startDate||'',
@@ -481,6 +592,9 @@ function cleanData(){
             if(s.type==='pic') return { type:'pic', text:s.text||'', pic:s.pic||'', popup:s.popup||'' };
             return { type:'link', text:s.text||'', href:s.href||'' };
         }),
+        sites: (DATA.sites||[]).map(function(t){
+            return { text:t.text||'', href:t.href||'', cover:t.cover||'' };
+        }),
         stats:{
             startDate: DATA.stats.startDate||'',
             experienceStart: DATA.stats.experienceStart||'',
@@ -503,6 +617,7 @@ function handleFileUpload(file){
             DATA={
                 profile: obj.profile || { avatar:'', name:'', desc:'' },
                 socials: Array.isArray(obj.socials) ? obj.socials : [],
+                sites: Array.isArray(obj.sites) ? obj.sites : [],
                 stats: obj.stats || { startDate:'', experienceStart:'', projectCount:0 }
             };
             $('fileInfo').textContent='已上传 '+file.name;
@@ -528,6 +643,7 @@ function loadRemote(){
             DATA={
                 profile: obj.profile || { avatar:'', name:'', desc:'' },
                 socials: Array.isArray(obj.socials) ? obj.socials : [],
+                sites: Array.isArray(obj.sites) ? obj.sites : [],
                 stats: obj.stats || { startDate:'', experienceStart:'', projectCount:0 }
             };
             $('fileInfo').textContent='已加载 ttt.json';
@@ -552,6 +668,19 @@ $('btnAddSocial').addEventListener('click',function(){
         if(inp){ inp.focus(); inp.select(); }
     }
     toast('已新增社交按钮','ok');
+});
+
+$('btnAddSite').addEventListener('click',function(){
+    if(!Array.isArray(DATA.sites)) DATA.sites=[];
+    DATA.sites.push(newSite());
+    renderSites();
+    var items=document.querySelectorAll('.social-item[data-sidx]');
+    if(items.length){
+        items[items.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+        var inp=items[items.length-1].querySelector('input[data-sitefield="text"]');
+        if(inp){ inp.focus(); inp.select(); }
+    }
+    toast('已新增网站','ok');
 });
 
 $('btnReload').addEventListener('click',function(){

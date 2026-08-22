@@ -58,10 +58,84 @@
                 socialHtml+='<a class="social-btn" href="'+(s.href||'#')+'">'+(s.text||'🔗')+'</a>';
             }
         });
+        // 我的其他网站 HTML（卡片样式，外部跳转新窗口，符合 pjax 外链规则）
+        var sites=cfg.sites || [];
+        var sitesHtml=buildSitesHtml(sites);
+        // 渲染位置：若页面存在独立 #sitesArea（音乐播放器后），则 sites 渲染到那里；
+        // 否则回退到 #profileArea 末尾（保持 index.html 原行为不变）
+        var sitesArea=document.getElementById('sitesArea');
+        var sitesInProfile=!sitesArea;
         var descHtml=String(p.desc||'')
             .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
             .replace(/\r\n|\r|\n/g,'<br>');
-        area.innerHTML='<div class="profile-head"><img class="avatar" src="'+(p.avatar||'')+'" alt="头像"><div class="profile-name"><h2>'+(p.name||'')+'</h2></div></div><div class="glass desc-card"><p>'+descHtml+'</p></div><div class="social-row">'+socialHtml+'</div>';
+        area.innerHTML='<div class="profile-head"><img class="avatar" src="'+(p.avatar||'')+'" alt="头像"><div class="profile-name"><h2>'+(p.name||'')+'</h2></div></div><div class="glass desc-card"><p>'+descHtml+'</p></div><div class="social-row">'+socialHtml+'</div>'+(sitesInProfile?sitesHtml:'');
+        // 独立 sitesArea 渲染
+        if(sitesArea){
+            sitesArea.innerHTML=sitesHtml||'';
+            if(sitesHtml) loadSiteCovers(sitesArea);
+        }else if(sitesHtml){
+            loadSiteCovers(area);
+        }
+    }
+
+    // ===== 构建 sites HTML =====
+    function buildSitesHtml(sites){
+        if(!Array.isArray(sites) || !sites.length) return '';
+        var listHtml='';
+        sites.forEach(function(t){
+            var txt=String(t.text==null?'':t.text)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;');
+            var href=String(t.href==null?'#':t.href)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;');
+            var cover=String(t.cover==null?'':t.cover)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;');
+            var coverInner=cover
+                ? '<div class="skeleton-shimmer"></div>'
+                : '<div class="site-ph">无图</div>';
+            listHtml+='<a class="site-card" href="'+href+'" target="_blank" rel="noopener" data-cover="'+cover+'" data-name="'+txt+'">'+
+                '<div class="site-cover">'+coverInner+'</div>'+
+                '<div class="site-name">'+txt+'</div>'+
+            '</a>';
+        });
+        return '<div class="sites-row"><div class="sites-title">我的其他网站</div><div class="sites-list">'+listHtml+'</div></div>';
+    }
+
+    // ===== sites 封面图懒加载 =====
+    function loadSiteCovers(scope){
+        var imgs=(scope||document).querySelectorAll('.site-card[data-cover]');
+        if(!imgs.length) return;
+        function fill(el){
+            var src=el.getAttribute('data-cover');
+            if(!src) return;
+            var img=new Image();
+            img.alt=el.getAttribute('data-name')||'';
+            img.onload=function(){
+                var cover=el.querySelector('.site-cover');
+                if(cover) cover.innerHTML='';
+                if(cover) cover.appendChild(img);
+            };
+            img.onerror=function(){
+                var cover=el.querySelector('.site-cover');
+                if(cover) cover.innerHTML='<div class="site-ph">加载失败</div>';
+            };
+            img.src=src;
+        }
+        if('IntersectionObserver' in window){
+            var io=new IntersectionObserver(function(entries){
+                entries.forEach(function(entry){
+                    if(entry.isIntersecting){
+                        fill(entry.target);
+                        io.unobserve(entry.target);
+                    }
+                });
+            },{rootMargin:'100px'});
+            imgs.forEach(function(el){ io.observe(el); });
+        }else{
+            imgs.forEach(function(el){ fill(el); });
+        }
     }
     function renderStats(cfg){
         var grid=document.getElementById('statGrid');
