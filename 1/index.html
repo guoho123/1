@@ -355,7 +355,13 @@
 
   /* ---------- 事件绑定 ---------- */
   btn1.addEventListener("click", function(){ draw(1); });
-  btn5.addEventListener("click", function(){ draw(5); });
+  btn5.addEventListener("click", function(){
+    // 抽 5 人前自动清空上一轮抽中名单，每轮独立
+    drawnList = [];
+    renderChips();
+    updateStats();
+    draw(5);
+  });
 
   btnReset.addEventListener("click", function(){
     if(rolling) return;
