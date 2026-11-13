@@ -1,0 +1,45 @@
+{
+    "hello_world": {
+        "name": "hello_world",
+        "title": "未配置提醒插件",
+        "description": "一个简单的插件，用于提醒用户配置插件",
+        "version": "1.0.0",
+        "enabled": false,
+        "entry": "index.php",
+        "settings_url": "",
+        "hooks": [
+            "head_assets",
+            "body_end"
+        ]
+    },
+    "xf_glass_theme": {
+        "name": "xf_glass_theme",
+        "title": "小屋玻璃主题",
+        "description": "毛玻璃风格前台UI主题：接管首页展示头像、简介、社交按钮、时钟、统计卡片、音乐播放器、我的其他网站，并附带项目展示与文章系统页面，后台可视化编辑全部内容",
+        "version": "1.0.0",
+        "enabled": true,
+        "entry": "index.php",
+        "settings_url": "adminui_plugins.php?plugin=xf_glass_theme&page=admin",
+        "hooks": [
+            "head_assets",
+            "body_start",
+            "body_end",
+            "admin_nav"
+        ]
+    },
+    "blog": {
+        "name": "blog",
+        "title": "博客插件",
+        "description": "提供完整的博客功能，包括文章展示、详情查看、点赞互动等",
+        "version": "1.0.0",
+        "enabled": false,
+        "entry": "index.php",
+        "settings_url": "adminui_plugins.php?plugin=blog&page=admin_overview",
+        "hooks": [
+            "front_nav",
+            "head_assets",
+            "body_end",
+            "admin_nav"
+        ]
+    }
+}

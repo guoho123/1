@@ -1,0 +1,10 @@
+{
+    "name": "blog",
+    "title": "博客插件",
+    "description": "提供完整的博客功能，包括文章展示、详情查看、点赞互动等",
+    "version": "1.0.0",
+    "enabled": true,
+    "entry": "index.php",
+    "settings_url": "adminui_plugins.php?plugin=blog&page=admin_overview",
+    "hooks": ["front_nav", "head_assets", "body_end", "admin_nav"]
+}

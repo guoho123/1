@@ -1,0 +1,61 @@
+{
+    "site_name": "小屋",
+    "footer": "Copyright © {year} 心悦. All Rights Reserved",
+    "nav_home": "首页",
+    "nav_projects": "项目",
+    "nav_articles": "文章",
+    "nav_friends": "友链",
+    "friends": [],
+    "profile": {
+        "avatar": "1\/jpg\/avatar3.jpg",
+        "name": "心悦",
+        "desc": "\/\/初中生 14岁 广东\n\/\/邮箱：zxcvbnm147025@qq.com\n\/\/本项目已发布至GitHub+gitee"
+    },
+    "socials": [
+        {
+            "type": "pic",
+            "text": "<img alt=\"vx\" src=\"https:\/\/res.wx.qq.com\/t\/wx_fed\/base\/portal\/windows\/res\/assets\/logo.ca85d20a32.svg\" style=\"height: 50%;\">",
+            "pic": "http:\/\/qaz14705.bbroot.com\/plugins\/xf_glass_theme\/assets\/img\/u20261031_3c187cf18c.jpg",
+            "popup": "（文字可复制）我的微信：qaz1470251",
+            "href": ""
+        },
+        {
+            "type": "pic",
+            "text": "<img alt=\"qq\" src=\"https:\/\/static-res.qq.com\/static-res\/imqq\/qq-logo.png\" style=\"height: 70%;\">",
+            "pic": "http:\/\/qaz14705.bbroot.com\/plugins\/xf_glass_theme\/assets\/img\/u20261031_90acdd01fb.jpg",
+            "popup": "",
+            "href": ""
+        },
+        {
+            "type": "link",
+            "text": "<img alt=\"ks\" src=\"https:\/\/static.yximgs.com\/udata\/pkg\/frontend-explore\/material-lib-www\/pure-logo-1-min.png\" style=\"height: 70%;\">",
+            "pic": "",
+            "popup": "",
+            "href": "https:\/\/live.kuaishou.com\/profile\/guo20120515?fid=1830071306&cc=share_copylink&followRefer=151&shareMethod=TOKEN&kpn=KUAISHOU&subBiz=PROFILE&shareId=19086473769166&shareToken=X2VN5Jk1x9aw1NZ&shareResourceType=PROFILE_SELF&shareMode=APP&originShareId=19086473769166&appType=21&shareObjectId=1830071306&shareUrlOpened=0&timestamp=1787246294643"
+        },
+        {
+            "type": "link",
+            "text": "<img alt=\"github\" src=\"https:\/\/docs.github.com\/assets\/cb-4744\/images\/site\/apple-touch-icon-144x144.png\" style=\"height: 70%;\">",
+            "pic": "",
+            "popup": "",
+            "href": "https:\/\/github.com\/guoho123"
+        }
+    ],
+    "sites": [
+        {
+            "text": "个人主页插件版",
+            "href": "https:\/\/github.com\/guoho123\/web1",
+            "cover": "\/plugins\/xf_glass_theme\/assets\/img\/u20261029_81bdb60338.jpeg"
+        },
+        {
+            "text": "AIRouter",
+            "href": "http:\/\/qaz14705.bbroot.com\/index.php?plugin=xf_glass_theme&page=project_detail&file=AIRouter.md",
+            "cover": "\/plugins\/xf_glass_theme\/assets\/img\/u20261029_8431e7f06a.jpeg"
+        }
+    ],
+    "stats": {
+        "startDate": "2024-03-01",
+        "experienceStart": "2024-03-01",
+        "projectCount": 9
+    }
+}

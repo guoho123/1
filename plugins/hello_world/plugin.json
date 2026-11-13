@@ -1,0 +1,10 @@
+{
+    "name": "未配置提醒插件",
+    "title": "未配置提醒插件",
+    "description": "一个简单的插件，用于提醒用户配置插件",
+    "version": "1.0.0",
+    "enabled": true,
+    "entry": "index.php",
+    "settings_url": "",
+    "hooks": ["head_assets", "body_end"]
+}

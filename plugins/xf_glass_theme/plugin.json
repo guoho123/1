@@ -1,0 +1,10 @@
+{
+    "name": "xf_glass_theme",
+    "title": "小屋玻璃主题",
+    "description": "毛玻璃风格前台UI主题：接管首页展示头像、简介、社交按钮、时钟、统计卡片、音乐播放器、我的其他网站，并附带项目展示与文章系统页面，后台可视化编辑全部内容",
+    "version": "1.0.0",
+    "enabled": true,
+    "entry": "index.php",
+    "settings_url": "adminui_plugins.php?plugin=xf_glass_theme&page=admin",
+    "hooks": ["head_assets", "body_start", "body_end", "admin_nav"]
+}

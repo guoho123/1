@@ -1,0 +1,9 @@
+{
+    "installed_at": "2026-09-18 12:29:33",
+    "version": "1.0.0",
+    "settings": {
+        "per_page": 10,
+        "show_excerpt": true,
+        "allow_likes": true
+    }
+}

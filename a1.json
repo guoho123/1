@@ -1,0 +1,10 @@
+{
+    "admin_user": "admin",
+    "admin_pwd": "qaz147025",
+    "site_name": "心悦",
+    "mail_config": {
+        "qq_mail": "",
+        "port": "465",
+        "auth_code": ""
+    }
+}
